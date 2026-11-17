@@ -43,16 +43,39 @@ Layers are standard PDF optional content, so other PDF readers show and hide the
 
 ## Installing on the display (Windows)
 
-1. Build the installer on a Windows machine with the release workflow, or run
-   `packaging/windows/package.ps1`. It produces an `.msi`.
-2. Copy the `.msi` to the display's PC and double-click it. Leave *Add to the PDF context menu*
-   ticked.
-3. To open a plan, right-click the PDF and choose **Open with ▸ Revue PDF K&D**, or **Open with
+### The simple setup (recommended)
+
+1. **Make the setup once**, on any Windows 10 or 11 PC. Open PowerShell in a checkout of this
+   repository and run:
+
+   ```powershell
+   powershell -ExecutionPolicy Bypass -File packaging\windows\revue\Build-RevueSetup.ps1
+   ```
+
+   The script offers to install Rust and the Visual C++ build tools if they are missing, then
+   builds the app. The first build takes 15 to 30 minutes. It produces
+   `dist\Revue-PDF-KD-Setup.zip`. Add `-WithOcr` to include text recognition for scanned plans.
+2. **Install on the display.** Copy the zip to the display's PC, extract it, and double-click
+   **Install.cmd**. This PC needs no build tools and no administrator rights. To install for every
+   account, run `.\Install.cmd -AllUsers` in that folder.
+3. **Open a plan.** Right-click the PDF and choose **Open with ▸ Revue PDF K&D**, or **Open with
    Revue PDF K&D** on the classic menu (on Windows 11 it is under *Show more options*). To always
    open PDFs in Revue, choose **Open with ▸ Choose another app**, pick Revue PDF K&D and tick
    *Always*.
 
-The installer never takes over an existing PDF default by itself. You choose.
+The installer adds Start menu and desktop shortcuts, and an entry in Settings ▸ Default apps. To
+uninstall, use Settings ▸ Apps ▸ Revue PDF K&D, or double-click **Uninstall.cmd**. Your PDFs and
+settings are kept.
+
+The setup isn't code-signed, so Windows may show "Windows protected your PC". Click **More info ▸
+Run anyway**.
+
+### The MSI installer
+
+`packaging/windows/package.ps1` builds a full `.msi` with the same registration, signed when
+signing secrets are set. It also needs the .NET SDK and WiX 5.
+
+Neither installer takes over the PDF default by itself. You choose.
 
 ## Headless use
 
