@@ -156,6 +156,18 @@ pub enum Edit {
     },
     /// Add a comment (sticky note, highlight, shape, drawing, text box…).
     AddAnnotation(NewAnnotation),
+    /// A new markup layer (optional content group) named `name`, listed in the Layers panel and
+    /// shown. Markups drawn on it with [`Edit::OnLayer`] show and hide with it.
+    AddLayer {
+        name: String,
+    },
+    /// `edit` (an added comment or measurement) drawn on the layer named `layer`, which is made
+    /// first, shown, when the document doesn't have it: what it adds is marked as that layer's
+    /// content (`/OC`). Its undo label is `edit`'s.
+    OnLayer {
+        layer: String,
+        edit: Box<Edit>,
+    },
     /// A custom stamp from a picture file (a PDF page or an image) on `page`. A zero-size
     /// `rect` is a point: the stamp is centred there at its natural size (at most 200 pt).
     /// Any other `rect` is a box: the picture is scaled to fit inside it, keeping its shape,

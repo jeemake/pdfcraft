@@ -367,6 +367,8 @@ fn tool_input(
     if let QuickTool::Measure(measure_tool) = tool {
         crate::measure_ui::page_input(ui, crate::measure_ui::Clicks::of(resp, free), doc, view, pcx, measure_tool, units);
     }
+    crate::revue_ui::poll(ui.ctx(), view, doc, author, units);
+    crate::revue_ui::paint_ruler(ui, view, doc, i, &xf, units);
     if let QuickTool::Stamp(kind) = tool
         && allowed
         && crate::stamps_ui::place(cx, kind, by_line, author, free, view)

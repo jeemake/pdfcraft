@@ -4,6 +4,9 @@
 #![deny(clippy::unwrap_used, clippy::expect_used, clippy::panic, clippy::unimplemented, clippy::todo, clippy::unreachable)]
 
 pub mod number_format;
+pub mod region;
+pub mod ruler;
+pub mod scale_text;
 pub mod snap;
 use number_format::{Formats, NumberFormat};
 use pdfcraft_annot::{Meta, NewAnnotation, Shape, Style};

@@ -167,6 +167,25 @@ fn form_edit_pages(
 }
 
 impl PdfCraftApp {
+    /// Revue: a markup straightened along the ruler and drawn on the active layer, which is shown
+    /// first so what is drawn doesn't vanish. Other edits as they are.
+    fn revue_edit(&mut self, i: usize, id: pdfcraft_engine::DocId, edit: &Edit) -> Edit {
+        let Some(view) = self.views.get(i) else { return edit.clone() };
+        let applied = match self.session.get(id) {
+            Some(doc) => crate::revue_ui::prepare(&view.revue, doc, edit.clone()),
+            None => return edit.clone(),
+        };
+        let layer = &view.revue.active_layer;
+        if applied != *edit
+            && let Some(hidden) = self.session.get(id).and_then(|d| d.info.layers.iter().position(|l| l.name == *layer && !l.visible))
+            && self.session.set_layer_visible(id, hidden, true)
+            && let Some(view) = self.views.get_mut(i)
+        {
+            view.invalidate_content();
+        }
+        applied
+    }
+
     /// Apply an edit to the active document. Returns `true` on success; failures are shown.
     pub fn apply_edit(&mut self, edit: Edit) -> bool {
         let Some((i, id)) = self.active_ids() else { return false };
@@ -215,7 +234,8 @@ impl PdfCraftApp {
             }
             _ => Vec::new(),
         };
-        match self.session.apply(id, edit.clone()) {
+        let applied = self.revue_edit(i, id, &edit);
+        match self.session.apply(id, applied) {
             Ok(()) => {
                 let Some(doc) = self.session.get(id) else { return true };
                 let info = &doc.info;

@@ -292,6 +292,20 @@ pub fn interpret_page<'a>(
             {
                 continue;
             }
+            // PdfCraft patch (107): an annotation that is a layer's content (`/OC`, ISO 32000-2
+            // §12.5.2, Table 166) is drawn only while that layer (or membership dictionary) is
+            // visible, so markups drawn on a layer hide with it.
+            if let Some(oc) = annot.get::<Dict<'_>>(OC) {
+                match annot.get_ref(OC) {
+                    Some(r) => context.ocg_state.begin_ocg(&oc, r.into()),
+                    None => context.ocg_state.begin_ocmd(&oc),
+                }
+                let visible = context.ocg_state.is_visible();
+                context.ocg_state.end_marked_content();
+                if !visible {
+                    continue;
+                }
+            }
 
             // PdfCraft patch: `/N` may be a stream or a dictionary of appearance states selected
             // by `/AS` (checkboxes, radio buttons, …). Upstream only handled the stream form.

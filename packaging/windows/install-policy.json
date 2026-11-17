@@ -58,7 +58,7 @@
       "-1",
       "Software\\Classes\\Applications\\pdfcraft.exe",
       "FriendlyAppName",
-      "PdfCraft"
+      "Revue PDF K&D"
     ],
     [
       "-1",
@@ -82,13 +82,13 @@
       "-1",
       "Software\\PdfCraft\\Capabilities",
       "ApplicationName",
-      "PdfCraft"
+      "Revue PDF K&D"
     ],
     [
       "-1",
       "Software\\PdfCraft\\Capabilities",
       "ApplicationDescription",
-      "Open-source PDF workbench"
+      "PDF drawing board for plans, built on PdfCraft"
     ],
     [
       "-1",
@@ -124,7 +124,7 @@
       "-1",
       "Software\\Classes\\SystemFileAssociations\\.pdf\\shell\\PdfCraft.Edit",
       "",
-      "Edit with PdfCraft"
+      "Open with Revue PDF K&D"
     ],
     [
       "-1",

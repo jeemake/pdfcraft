@@ -417,6 +417,40 @@ pub static TOOL_GROUPS: &[ToolGroup] = &[
         }],
     },
     ToolGroup {
+        id: "revue",
+        label: "Revue drawing board",
+        icon: "pen-tool",
+        hue: PINK,
+        badge: None,
+        availability: Ready,
+        sections: &[
+            ToolSection {
+                title: "Brushes",
+                items: &[
+                    item("Technical pen", "pen-tool", "revue.pen", Ready),
+                    item("Fine liner", "pencil", "revue.liner", Ready),
+                    item("Marker", "brush", "revue.marker", Ready),
+                    item("Graphite pencil", "pencil", "revue.pencil", Ready),
+                    item("Colour wash", "brush", "revue.wash", Ready),
+                    item("Highlighter pen", "highlighter", "revue.highlighter", Ready),
+                    item("Eraser", "eraser", "revue.eraser", Ready),
+                ],
+            },
+            ToolSection {
+                title: "Draw to scale",
+                items: &[
+                    item("Read scale from page", "ruler", "revue.read_scale", Ready),
+                    item("Scale ruler", "ruler", "revue.ruler", Ready),
+                    item("Smart fill area", "paint-bucket", "revue.fill", Ready),
+                ],
+            },
+            ToolSection {
+                title: "Layers",
+                items: &[item("Markup layers", "layers", "revue.layers", Ready), item("New markup layer", "plus", "revue.layer_add", Ready)],
+            },
+        ],
+    },
+    ToolGroup {
         id: "measure",
         label: "Measure objects",
         icon: "ruler",
@@ -561,7 +595,7 @@ pub struct ToolCategory {
 
 pub static TOOL_CATEGORIES: &[ToolCategory] = &[
     ToolCategory { label: "Create & Edit", groups: &["create", "edit", "export", "combine", "organize", "scan", "compress"] },
-    ToolCategory { label: "Review & Compare", groups: &["comment", "stamp", "compare", "measure"] },
+    ToolCategory { label: "Review & Compare", groups: &["revue", "comment", "stamp", "compare", "measure"] },
     ToolCategory { label: "Forms & Signatures", groups: &["fill_sign", "form", "certificate"] },
     ToolCategory { label: "Protect & Standardize", groups: &["protect", "redact", "accessibility", "standards", "print_production"] },
     ToolCategory { label: "Customize & Automate", groups: &["actions", "javascript", "search_index", "ai"] },

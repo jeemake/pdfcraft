@@ -31,6 +31,12 @@ impl Default for PdfCraftApp {
 }
 
 impl PdfCraftApp {
+    /// Revue PDF K&D's first-launch settings, before saved ones are restored over them: the
+    /// hotbar holds the Revue pens, ruler, smart fill and layers on touch-sized buttons.
+    pub fn use_revue_defaults(&mut self) {
+        self.hotbar = crate::hotbar::Hotbar::revue();
+    }
+
     /// The window's title and, on the web, the page's, from the active document (#3640). Done in
     /// `logic` too, which also runs while the window or browser tab is hidden: a document opened
     /// then (a `?file=` download finishing) still names the page an embedding host reads.
@@ -44,7 +50,7 @@ impl PdfCraftApp {
         let mark = if dirty { " •" } else { "" };
         let titled = |name: Option<String>| {
             name.or_else(|| self.combine_showing().then(|| tl!("Combine files").to_owned()))
-                .map_or_else(|| "PdfCraft".to_owned(), |name| format!("{name}{mark} — PdfCraft"))
+                .map_or_else(|| crate::PRODUCT_NAME.to_owned(), |name| format!("{name}{mark} — {}", crate::PRODUCT_NAME))
         };
         let title = titled(front.and_then(|i| crate::canvas::tab_label(self, i)));
         // The web page's title is what an embedding host reads to tell which file opened, so it

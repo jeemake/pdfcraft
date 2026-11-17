@@ -2,4 +2,7 @@ Label = "Layers"
 Label = "1"
 Button "Close" [off]
 Button "Layer options" [off]
+CheckBox "Draw on" [on]
+ComboBox "Draw on" = "Layer 1"
+Button "New markup layer"
 CheckBox "Draft notes" [on]

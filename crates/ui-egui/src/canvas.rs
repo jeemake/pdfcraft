@@ -700,6 +700,8 @@ pub struct DocView {
     /// Commenting state: selected comment, gestures, composer.
     pub comments: crate::comments::CommentView,
     pub measure: crate::measure_ui::MeasureView,
+    /// Revue's drawing board: the active layer, the ruler, smart fill.
+    pub(crate) revue: crate::revue_ui::RevueView,
     /// Form filling state: the focused field.
     pub forms: crate::forms_ui::FormView,
     /// Prepare a form: the selected field and the gesture in progress.
@@ -1173,6 +1175,7 @@ impl DocView {
             slow_pages: HashSet::new(),
             comments: crate::comments::CommentView::from_info(info),
             measure: Default::default(),
+            revue: Default::default(),
             forms: Default::default(),
             prepare: Default::default(),
             calc_order: Default::default(),
