@@ -34,6 +34,9 @@ macro_rules! tl_ctx {
         $crate::i18n::tr_ctx($crate::i18n::current(), $context, $s)
     };
 }
+/// The name the window, the taskbar and Windows' "Open with" show: this build is Revue PDF K&D,
+/// built on PdfCraft (the crates, settings folders and command-line tools keep that name).
+pub const PRODUCT_NAME: &str = "Revue PDF K&D";
 pub mod canvas;
 mod chrome;
 mod image_engine;
@@ -188,6 +191,7 @@ use tools::measure_ui;
 use tools::object_ui;
 pub use tools::prepare;
 use tools::redact_ui;
+use tools::revue_ui;
 use tools::sign_ui;
 use tools::stamps_ui;
 use tools::tags_ui;

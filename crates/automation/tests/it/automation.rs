@@ -14761,3 +14761,64 @@ fn grouped_existing_thai_body_edits_saves_reopens_and_undo_restores_original_gly
     assert_eq!(page_text(&mut a, reopened), [new, old]);
     assert_eq!(ok(&mut a, "content_list", json!({"doc":reopened}))["count"], 0, "editing existing text must not create Add Text objects");
 }
+
+/// One 200 × 300 page: a 100 × 78 pt room inside 2 pt walls, and a title "ECHELLE 1/50".
+fn plan_pdf() -> Vec<u8> {
+    let body = "0 g 50 150 104 2 re f 50 230 104 2 re f 50 150 2 82 re f 152 150 2 82 re f BT /F1 10 Tf 20 20 Td (ECHELLE 1/50) Tj ET";
+    let objs = [
+        "<< /Type /Catalog /Pages 2 0 R >>".to_string(),
+        "<< /Type /Pages /Kids [4 0 R] /Count 1 /MediaBox [0 0 200 300] >>".to_string(),
+        "<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>".to_string(),
+        "<< /Type /Page /Parent 2 0 R /Contents 5 0 R /Resources << /Font << /F1 3 0 R >> >> >>".to_string(),
+        format!("<< /Length {} >>\nstream\n{body}\nendstream", body.len()),
+    ];
+    let mut out = b"%PDF-1.7\n".to_vec();
+    let mut offsets = Vec::new();
+    for (i, o) in objs.iter().enumerate() {
+        offsets.push(out.len());
+        out.extend_from_slice(format!("{} 0 obj\n{o}\nendobj\n", i + 1).as_bytes());
+    }
+    let xref = out.len();
+    out.extend_from_slice(format!("xref\n0 {}\n0000000000 65535 f \n", objs.len() + 1).as_bytes());
+    for o in offsets {
+        out.extend_from_slice(format!("{o:010} 00000 n \n").as_bytes());
+    }
+    out.extend_from_slice(format!("trailer\n<< /Size {} /Root 1 0 R >>\nstartxref\n{xref}\n%%EOF\n", objs.len() + 1).as_bytes());
+    out
+}
+
+#[test]
+fn a_plan_is_scaled_from_its_title_block_then_a_room_is_filled_on_a_layer() {
+    let dir = workdir("smart-fill");
+    std::fs::write(dir.join("plan.pdf"), plan_pdf()).unwrap();
+    let mut a = auto(&dir);
+    let doc = ok(&mut a, "doc_open", json!({"path":"plan.pdf"}))["doc"].as_u64().unwrap();
+    // The scale written on the sheet, applied as 1 mm = 50 mm.
+    let found = ok(&mut a, "measure_read_scale", json!({"doc":doc,"page":1}));
+    assert_eq!(found["scales"][0]["ratio"], 50.0);
+    assert_eq!(found["scales"][0]["labelled"], true);
+    ok(&mut a, "measure_scale", json!({"doc":doc,"page":1,"page_distance":1,"page_unit":"mm","distance":50,"unit":"mm","precision":0}));
+    // A preview changes nothing; the room is 100 × 78 pt, at 1:50 about 1.764 m × 1.376 m.
+    let preview = ok(&mut a, "measure_fill", json!({"doc":doc,"page":1,"at":[100,110],"preview":true}));
+    assert!(preview.get("measured").is_none());
+    assert_eq!(ok(&mut a, "measure_list", json!({"doc":doc}))["count"], 0);
+    let added = ok(&mut a, "measure_fill", json!({"doc":doc,"page":1,"at":[100,110],"layer":"Surfaces","label":"Séjour"}));
+    let mm2 = added["measured"]["reading"]["value"].as_f64().unwrap();
+    let pt_mm = 25.4 / 72.0 * 50.0;
+    let expected = 100.0 * 78.0 * pt_mm * pt_mm;
+    assert!((mm2 - expected).abs() / expected < 0.03, "{mm2} vs {expected}");
+    let info = ok(&mut a, "doc_info", json!({"doc":doc}));
+    assert_eq!(info["layers"][0]["name"], "Surfaces");
+    assert_eq!(ok(&mut a, "measure_list", json!({"doc":doc}))["count"], 1);
+    // Hiding the layer hides the fill.
+    let shown = a.call("page_render", &json!({"doc":doc,"page":1,"dpi":72})).unwrap();
+    ok(&mut a, "layer_set", json!({"doc":doc,"layer":"Surfaces","visible":false}));
+    let hidden = a.call("page_render", &json!({"doc":doc,"page":1,"dpi":72})).unwrap();
+    assert_ne!(format!("{shown:?}"), format!("{hidden:?}"));
+    // Outside the room is open to the page edge, and a duplicate layer is refused.
+    assert!(a.call("measure_fill", &json!({"doc":doc,"page":1,"at":[10,290]})).is_err());
+    assert!(a.call("layer_add", &json!({"doc":doc,"name":"Surfaces"})).is_err());
+    let layers = ok(&mut a, "layer_add", json!({"doc":doc,"name":"Esquisse"}));
+    assert_eq!(layers["layers"].as_array().map(Vec::len), Some(2));
+    let _ = std::fs::remove_dir_all(dir);
+}

@@ -218,6 +218,10 @@ fn tool_detail(app: &mut PdfCraftApp, ui: &mut egui::Ui, t: &Tokens, g: &'static
             );
         });
     }
+    if g.id == "revue" {
+        crate::revue_ui::panel(app, ui, t);
+        return;
+    }
     if g.id == "measure" {
         crate::measure_ui::panel(app, ui, t);
         return;

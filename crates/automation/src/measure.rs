@@ -157,3 +157,67 @@ impl Automation {
         Ok(json!({"path":target,"count":all.measurements.len(),"unsupported":all.unsupported.len(),"truncated":all.truncated}))
     }
 }
+
+/// Smart measuring and markup layers: the scale written on a page, a tap-inside area, layers to draw on.
+impl Automation {
+    /// `measure_read_scale`: the metric drawing scales written on a page, labelled first.
+    pub(crate) fn measurement_read_scale(&self, a: &Args) -> Result<Value> {
+        let page = self.page(a)?;
+        let found = self.doc(a)?.page_scales(page);
+        Ok(json!({ "count": found.len(), "scales": found }))
+    }
+
+    /// `measure_fill`: the area enclosed around `at`, added as an area measurement (on `layer`
+    /// when given, creating it), or only read with `preview`.
+    pub(crate) fn measurement_fill(&mut self, a: &Args) -> Result<Value> {
+        let page = self.page(a)?;
+        let at = a.get("at").and_then(Value::as_array).filter(|p| p.len() == 2).ok_or_else(|| ToolError::InvalidArgs("at must be [x, y]".into()))?;
+        let at = [
+            at.first().and_then(Value::as_f64).ok_or_else(|| failed("invalid x coordinate"))?,
+            at.get(1).and_then(Value::as_f64).ok_or_else(|| failed("invalid y coordinate"))?,
+        ];
+        let mut options = measure::region::FillOptions::default();
+        if let Some(gaps) = a.opt_int("close_gaps")? {
+            options.close_gaps =
+                u32::try_from(gaps).ok().filter(|g| *g <= measure::region::MAX_CLOSE).ok_or_else(|| failed("close_gaps must be 0 to 64 pixels"))?;
+        }
+        if let Some(t) = a.opt_int("threshold")? {
+            options.threshold = u8::try_from(t).map_err(|_| failed("threshold must be 0 to 255"))?;
+        }
+        let doc = self.doc(a)?;
+        let fill = doc.smart_fill(page, at, options).map_err(failed)?;
+        let first = fill.points.first().copied().ok_or_else(|| failed("the region has no outline"))?;
+        let scale = doc.measurement_scale_or(page, first, 1.0 / 72.0, "in").map_err(failed)?;
+        let reading = measure::reading(Kind::Area, &fill.points, &scale).map_err(failed)?;
+        let outline = fill.points.iter().map(|p| doc.measurement_to_view(page, *p).map_err(failed)).collect::<Result<Vec<_>>>()?;
+        let found = json!({ "reading": reading, "scale": scale, "outline": outline, "pixels_per_point": fill.pixels_per_point });
+        if a.opt_bool("preview")?.unwrap_or(false) {
+            return Ok(found);
+        }
+        let edit = Edit::AddMeasurement(NewMeasurement {
+            page,
+            kind: Kind::Area,
+            points: fill.points,
+            scale,
+            style: Style { color: [0.0, 0.47, 0.84], fill: Some([0.0, 0.47, 0.84]), fill_opacity: Some(0.2), ..Style::default() },
+            label: a.opt_str("label")?.unwrap_or("").into(),
+            author: a.opt_str("author")?.unwrap_or(super::comments::DEFAULT_AUTHOR).into(),
+        });
+        let edit = match a.opt_str("layer")? {
+            Some(layer) => doc.on_layer(layer, edit),
+            None => edit,
+        };
+        let mut out = self.apply(a, edit)?;
+        out["measured"] = found;
+        Ok(out)
+    }
+
+    /// `layer_add`: a new markup layer, shown.
+    pub(crate) fn layer_add(&mut self, a: &Args) -> Result<Value> {
+        let name = a.opt_str("name")?.ok_or_else(|| ToolError::InvalidArgs("missing argument name".into()))?.to_string();
+        let mut out = self.apply(a, Edit::AddLayer { name })?;
+        let layers = &self.doc(a)?.info.layers;
+        out["layers"] = json!(layers.iter().map(|l| json!({ "name": l.name, "visible": l.visible })).collect::<Vec<_>>());
+        Ok(out)
+    }
+}

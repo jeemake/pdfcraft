@@ -10460,3 +10460,51 @@ commands = []
 tools = []
 evidence = []
 notes = ""
+
+[[feature]]
+id = "revue.read-scale"
+title = "Drawing scale read from the page"
+area = "E"
+tier = "P2"
+milestone = "M12"
+status = "shipped"
+commands = ["revue.read_scale"]
+tools = ["measure_read_scale"]
+evidence = ["crates/automation/tests/it/automation.rs::a_plan_is_scaled_from_its_title_block_then_a_room_is_filled_on_a_layer", "crates/measure/src/scale_text.rs::metric_scales_are_read_with_or_without_a_scale_word", "crates/measure/src/scale_text.rs::fractions_dates_and_numbers_are_not_scales", "crates/engine/src/smart_measure.rs::the_scale_in_a_title_block_is_read"]
+notes = "Revue PDF K&D: metric scales written on the sheet (\"SCALE 1:100\", \"Échelle 1/50\", \"1/100e\") are offered, labelled ones first, and one tap applies the scale to the page (1 mm = N mm, read in metres). Imperial scales are deliberately not read. Not an Acrobat feature; drawing-board apps for architects offer it."
+
+[[feature]]
+id = "revue.smart-fill"
+title = "Smart fill area measurement"
+area = "E"
+tier = "P2"
+milestone = "M12"
+status = "shipped"
+commands = ["revue.fill"]
+tools = ["measure_fill"]
+evidence = ["crates/automation/tests/it/automation.rs::a_plan_is_scaled_from_its_title_block_then_a_room_is_filled_on_a_layer", "crates/measure/src/region.rs::a_closed_room_is_filled_to_its_walls", "crates/measure/src/region.rs::a_door_opening_leaks_unless_gaps_are_closed", "crates/measure/src/region.rs::text_inside_the_room_does_not_reduce_its_area", "crates/engine/src/smart_measure.rs::a_tap_inside_the_room_finds_its_walls"]
+notes = "Tap inside a room: the page is read as pixels (vector or scanned) without its comments, walls are dark pixels, gaps such as doors up to about twice close_gaps pixels are closed, and the outer outline (text and furniture inside don't count) becomes an area measurement at the page's scale. Precision is a pixel at about 3 pixels per point."
+
+[[feature]]
+id = "revue.markup-layers"
+title = "Markup layers"
+area = "E"
+tier = "P2"
+milestone = "M12"
+status = "shipped"
+commands = ["revue.layers", "revue.layer_add"]
+tools = ["layer_add", "layer_set", "measure_fill"]
+evidence = ["crates/engine/src/markup_layers.rs::a_drawing_on_a_layer_is_its_content", "crates/engine/src/markup_layers.rs::hiding_a_layer_hides_the_drawings_on_it", "crates/engine/src/markup_layers.rs::the_default_layer_is_made_with_the_first_markup_in_one_undo_step", "crates/automation/tests/it/automation.rs::a_plan_is_scaled_from_its_title_block_then_a_room_is_filled_on_a_layer"]
+notes = "Optional content groups made for drawing on, like tracing paper: every document shows a default layer (Layer 1) over the original PDF, written into the file with the first markup drawn on it, so opening never changes a file. New comments and measurements go on the active layer (/OC), and show, hide and print with it; the renderer honours an annotation's /OC (hayro-interpret patch 107). Signatures, stamps, attachments and redactions stay off layers. Not yet: renaming, reordering, deleting layers, or moving markups between them."
+
+[[feature]]
+id = "revue.scale-ruler"
+title = "Scale ruler and brushes"
+area = "E"
+tier = "P3"
+milestone = "M12"
+status = "partial"
+commands = ["revue.ruler", "revue.pen", "revue.liner", "revue.marker", "revue.pencil", "revue.wash", "revue.highlighter", "revue.eraser", "revue.tools"]
+tools = ["comment_add"]
+evidence = ["crates/measure/src/ruler.rs::a_one_to_hundred_plan_reads_in_metres", "crates/measure/src/ruler.rs::zooming_in_refines_the_graduations", "crates/ui-egui/src/tools/revue_ui.rs::a_stroke_along_the_edge_comes_out_straight", "crates/ui-egui/src/tools/revue_ui.rs::a_turned_ruler_straightens_along_its_angle"]
+notes = "A ruler laid on the page, graduated in real-world units at the page's scale and refined as you zoom; drag it to move, drag its end handle to turn it (snapping to 15°), and ink drawn along its edge comes out straight. Six brushes (technical pen, fine liner, marker, pencil, colour wash, highlighter) set the ink tool's colour, width and opacity. Partial: the ruler is a view aid only (no headless tool places it; comment_add draws the strokes), and strokes have no pressure sensitivity."

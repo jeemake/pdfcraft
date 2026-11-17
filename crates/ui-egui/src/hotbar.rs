@@ -64,6 +64,29 @@ impl Hotbar {
     }
 }
 
+/// The tools Revue PDF K&D's first launch puts on the hotbar ([`Hotbar::revue`]): its pens,
+/// ruler, measuring and layers, a finger's reach away on a touch display.
+pub(crate) const REVUE_TOOLS: [&str; 11] = [
+    "revue.pen",
+    "revue.liner",
+    "revue.marker",
+    "revue.highlighter",
+    "revue.eraser",
+    "revue.ruler",
+    "revue.fill",
+    "measure.distance",
+    "measure.area",
+    "revue.layers",
+    "revue.tools",
+];
+
+impl Hotbar {
+    /// The hotbar of Revue PDF K&D's first launch: the Revue tools on big buttons for touch.
+    pub(crate) fn revue() -> Self {
+        Self { tools: REVUE_TOOLS.iter().map(|s| (*s).to_string()).collect(), button_size: 48.0, ..Self::default() }
+    }
+}
+
 impl Default for Hotbar {
     /// Create a default vertical floating hotbar positioned in the document margin.
     fn default() -> Self {
@@ -192,7 +215,8 @@ fn matches_search(spec: &pdfcraft_engine::commands::CommandSpec, query: &str) ->
 fn tool_buttons(ui: &mut egui::Ui, app: &PdfCraftApp, tools: &[String], cell: f32, run: &mut Option<&'static str>, remove: &mut Option<usize>) {
     for (index, id) in tools.iter().enumerate() {
         let Some(spec) = command(id) else { continue };
-        let active = crate::comments::CommentTool::from_command(id).is_some_and(|tool| app.quick_tool == crate::QuickTool::Comment(tool));
+        let active = crate::comments::CommentTool::from_command(id).is_some_and(|tool| app.quick_tool == crate::QuickTool::Comment(tool))
+            || crate::revue_ui::is_active(app, id);
         let button = ui.add_enabled_ui(app.command_enabled(spec), |ui| icons::button(ui, spec.icon, cell, active, tl!(spec.label))).inner;
         if button.clicked() {
             *run = Some(spec.id);
@@ -1095,6 +1119,10 @@ mod tests {
 
     #[test]
     fn hotbar_validation_and_placement() {
+        let mut revue = Hotbar::revue();
+        revue.normalize();
+        assert_eq!(revue.tools, REVUE_TOOLS, "every Revue tool is a registered command");
+        assert_eq!(revue.button_size, 48.0);
         let mut bar = Hotbar::default();
         assert!(bar.tools.is_empty());
         bar.set_tools("comment.ink,comment.freehand_highlight,comment.ink").unwrap();

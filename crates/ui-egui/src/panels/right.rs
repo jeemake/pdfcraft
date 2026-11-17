@@ -236,8 +236,42 @@ pub fn right_panel(app: &mut PdfCraftApp, ui: &mut egui::Ui) {
                         );
                     }
                     RightPanel::Layers => {
+                        // Revue: what new markups are drawn on, and a new layer. A document without
+                        // layers shows the default one, made in the file by the first markup.
+                        ui.add_space(6.0);
+                        let mut names: Vec<String> = info.layers.iter().map(|l| l.name.clone()).collect();
+                        if names.is_empty() {
+                            names.push(pdfcraft_engine::DEFAULT_LAYER.into());
+                        }
+                        ui.horizontal(|ui| {
+                            let draw_on = ui.add(crate::widgets::checkbox(&mut view.revue.on_layers, tl!("Draw on")));
+                            craft_ui::ComboBox::from_id_salt("revue-active-layer")
+                                .selected_text(view.revue.active_layer.clone())
+                                .show_ui(ui, |ui| {
+                                    for name in &names {
+                                        if ui.selectable_label(view.revue.active_layer == *name, name).clicked() {
+                                            view.revue.active_layer = name.clone();
+                                            view.revue.on_layers = true;
+                                        }
+                                    }
+                                })
+                                .response
+                                .labelled_by(draw_on.id);
+                        });
+                        let add = egui::Button::new(tl!("New markup layer")).min_size(vec2(ui.available_width(), 40.0));
+                        if ui.add_enabled(doc.allows_annotation(), add).clicked() {
+                            panel_command = Some("revue.layer_add");
+                        }
+                        ui.separator();
                         if info.layers.is_empty() {
-                            empty(ui, &t, "layers", "This document has no layers.");
+                            ui.horizontal(|ui| {
+                                ui.add(icons::image("eye", 18.0, t.icon));
+                                ui.label(pdfcraft_engine::DEFAULT_LAYER);
+                            });
+                            ui.label(
+                                egui::RichText::new(tl!("Markups are drawn on this layer over the original PDF. It is saved with the first one."))
+                                    .color(t.text_faint),
+                            );
                         } else if info.layer_order.is_empty() {
                             // ISO 32000-2 Table 99: only the groups /Order lists are presented.
                             empty(ui, &t, "layers", "This document lists no layers to show.");

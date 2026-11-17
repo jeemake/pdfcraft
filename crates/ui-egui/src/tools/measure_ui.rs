@@ -14,6 +14,10 @@ pub enum Tool {
     Perimeter,
     Area,
     Calibrate,
+    /// Revue's smart fill: tap inside a room for its area.
+    Fill,
+    /// Revue's scale ruler: move and turn it on the page.
+    Ruler,
 }
 impl Tool {
     pub fn name(self) -> &'static str {
@@ -22,6 +26,8 @@ impl Tool {
             Self::Perimeter => "perimeter",
             Self::Area => "area",
             Self::Calibrate => "calibrate",
+            Self::Fill => "fill",
+            Self::Ruler => "ruler",
         }
     }
     pub fn from_name(s: &str) -> Option<Self> {
@@ -30,6 +36,8 @@ impl Tool {
             "perimeter" => Some(Self::Perimeter),
             "area" => Some(Self::Area),
             "calibrate" => Some(Self::Calibrate),
+            "fill" => Some(Self::Fill),
+            "ruler" => Some(Self::Ruler),
             _ => None,
         }
     }
@@ -299,12 +307,14 @@ fn takes_clicks(state: &MeasureView) -> bool {
 pub(crate) struct Clicks {
     pub single: bool,
     pub double: bool,
+    /// The press is the tool's: no hit holds it.
+    pub free: bool,
 }
 
 impl Clicks {
     /// `resp`'s clicks, when the press is the tool's (`free`).
     pub(crate) fn of(resp: &egui::Response, free: bool) -> Self {
-        Clicks { single: free && resp.clicked(), double: free && resp.double_clicked() }
+        Clicks { single: free && resp.clicked(), double: free && resp.double_clicked(), free }
     }
 }
 
@@ -317,6 +327,10 @@ pub(crate) fn page_input(
     tool: Tool,
     units: crate::units::Unit,
 ) {
+    if matches!(tool, Tool::Fill | Tool::Ruler) {
+        crate::revue_ui::page_input(ui, clicks, doc, view, cx, tool);
+        return;
+    }
     let page = cx.page;
     let xf = cx.xf;
     let author = &cx.prefs.author;

@@ -71,7 +71,8 @@ pub(crate) fn check_permission(edit: &Edit, p: &pdfcraft_cos::Permissions) -> Re
         | Edit::BorderColorAnnotation { .. }
         | Edit::BorderShapeAnnotation { .. }
         | Edit::SetAnnotationInfo { .. }
-        | Edit::SetMeasurementScale { .. } => {
+        | Edit::SetMeasurementScale { .. }
+        | Edit::AddLayer { .. } => {
             if p.annotate() {
                 Ok(())
             } else {
@@ -173,6 +174,7 @@ pub(crate) fn check_permission(edit: &Edit, p: &pdfcraft_cos::Permissions) -> Re
             }
         }
         Edit::Batch { edits, .. } => edits.iter().try_for_each(|e| check_permission(e, p)),
+        Edit::OnLayer { edit, .. } => check_permission(edit, p),
     }
 }
 
@@ -613,6 +615,8 @@ pub(crate) fn run_edit(doc: &mut pdfcraft_cos::Document, edit: &Edit, cx: &mut E
         Edit::AddAnnotation(a) => {
             pdfcraft_annot::add_annotation(doc, a, &cx.meta())?;
         }
+        Edit::AddLayer { name } => crate::markup_layers::add_layer(doc, name)?,
+        Edit::OnLayer { layer, edit } => crate::markup_layers::run_on_layer(doc, layer, edit, cx)?,
         Edit::PasteComments { xfdf, page, offset } => {
             // Names from the edit's own id generator: unique to this paste within the document.
             let prefix = cx.meta().id;
